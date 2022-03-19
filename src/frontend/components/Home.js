@@ -27,7 +27,6 @@ const Home = ({ marketplace, nft }) =>{
                     totalPrice,
                     itemId: item.itemId,
                     seller: item.seller,
-                    seller: item.seller,
                     name: metadata.name,
                     description: metadata.description,
                     image: metadata.image
