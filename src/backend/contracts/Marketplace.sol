@@ -31,6 +31,12 @@ contract Marketplace is ReentrancyGuard {
         uint price,
         address indexed seller
     );
+    event ItemUnlisted(
+        uint itemId,
+        address indexed nft,
+        uint tokenId,
+        address indexed seller
+    );
 
     event ItemPurchased(
         uint itemId,
@@ -63,9 +69,33 @@ contract Marketplace is ReentrancyGuard {
         emit ItemListed(
             itemCount, 
             address(_nft), 
-            _tokenId, _price, 
+            _tokenId, 
+            _price, 
             payable(msg.sender)
         );
+    }
+    //Allows user to unlist nft for sale
+    function unlistItem(uint _itemId) external nonReentrant{
+        //Fetches item from mapping
+        Item storage item = items[_itemId];
+        //Checks if item exists 
+        require(_itemId > 0 && _itemId <= itemCount, "Item doesn't exist");
+        //Checks if item sold
+        require(!item.sold, "Item has already been sold");
+        //Requires that msg.sender owns the item
+        require(item.seller == msg.sender, "You do not own this item");
+        //Update item to sold
+        item.sold = true;
+        //transfer nft to owner
+        item.nft.transferFrom(address(this), msg.sender, item.tokenId);
+        //emit itemUnlisted event 
+        emit ItemUnlisted(
+            _itemId,
+            address(item.nft),
+            item.tokenId,
+            msg.sender
+        );
+
     }
     
     function purchaseItem(uint _itemId) external payable nonReentrant {

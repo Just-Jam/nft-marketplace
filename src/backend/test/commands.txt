@@ -1,0 +1,1 @@
+npx hardhat run src/backend/scripts/deploy.js --network localhost

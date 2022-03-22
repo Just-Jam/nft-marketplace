@@ -9,7 +9,7 @@ describe('NFTMarketplace', function(){
     let feePercent = 1
     let URI = "Test URI"
 
-    //Does this before each test
+    //Does this before each test: deploys contracts, get user addresses
     beforeEach(async function(){
         //Get contract factories
         const NFT = await ethers.getContractFactory("NFT"); 
@@ -143,6 +143,52 @@ describe('NFTMarketplace', function(){
             //Deployer tries to purchase item 1 after it has been sold
             await expect(marketplace.connect(address1).purchaseItem(1, {value: totalPriceInWei}))
             .to.be.revertedWith("Item has already been sold")
+        })
+    })
+    describe("Unlisting marketplace item", function(){
+        beforeEach(async function(){
+            //Address 1 mints an nft
+            await nft.connect(address1).mint(URI)
+            //Address 1 approves marketplace to spend nft
+            await nft.connect(address1).setApprovalForAll(marketplace.address, true)
+
+            //Address 1 lists their nft for 1 eth
+            await expect(marketplace.connect(address1).listItem(nft.address, 1, toWei(1)))
+            .to.emit(marketplace, "ItemListed")
+            .withArgs(
+                1,
+                nft.address,
+                1,
+                toWei(1),
+                address1.address
+            )
+        })
+        it("Owner should be able to unlist item, receive nft, and marketplace itemcount = 0", async function(){
+            //Owner of nft should be marketplace
+            expect(await nft.ownerOf(1)).to.equal(marketplace.address);
+            //Address 1 unlists nft
+            await expect(marketplace.connect(address1).unlistItem(1))
+            .to.emit(marketplace, "ItemUnlisted")
+            .withArgs(
+                1,
+                nft.address,
+                1,
+                address1.address
+            )
+            //Owner of nft should be address1
+            expect(await nft.ownerOf(1)).to.equal(address1.address);
+            //Item should be marked as sold
+            expect((await marketplace.items(1)).sold).to.equal(true)
+        })
+        it("Should fail if tries to unlist item that doesnt exist", async function(){
+            //Address 2 tries to unlist nft
+            await expect(marketplace.connect(address1).unlistItem(2))
+            .to.be.revertedWith("Item doesn't exist")
+        })
+        it("Should fail if different address tries to unlist item", async function(){
+            //Address 2 tries to unlist nft
+            await expect(marketplace.connect(address2).unlistItem(1))
+            .to.be.revertedWith("You do not own this item")
         })
     })
 })
