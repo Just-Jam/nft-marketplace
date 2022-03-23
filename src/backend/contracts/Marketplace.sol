@@ -53,7 +53,7 @@ contract Marketplace is ReentrancyGuard {
     constructor(uint _feePercent){
         feeAccount = payable(msg.sender);
         feePercent = _feePercent;
-    } 
+    }
 
     //User passes in address of nft object, tokenId and price for sale
     //nonReentrant prevents reentrancy exploit
