@@ -14,7 +14,6 @@ contract StakingV2 is ReentrancyGuard{
 
     IERC20 public stakingToken;
     uint256 public _totalSupply;
-    uint256 public ethBalance;
 
     mapping(address => uint256) private _balances;
     mapping(address => uint256) private _userEthEarned;
@@ -67,7 +66,6 @@ contract StakingV2 is ReentrancyGuard{
         uint256 reward = _userEthEarned[msg.sender];
         require(reward > 0, "No ETH rewards to claim");
         _userEthEarned[msg.sender] = 0;
-        ethBalance = ethBalance.sub(reward);
         payable(msg.sender).transfer(reward);
         emit RewardClaimed(msg.sender, reward);
     }
@@ -75,7 +73,6 @@ contract StakingV2 is ReentrancyGuard{
     //Would break if recipient address is repeated in array
     //Gas cost should increase linearly with number of stakers
     function depositEth() external payable{
-        ethBalance = ethBalance.add(msg.value);
         for(uint i =0; i < recipients.length; i++){
            _userEthEarned[recipients[i]] =  
            _userEthEarned[recipients[i]]
