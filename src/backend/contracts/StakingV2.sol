@@ -13,7 +13,8 @@ contract StakingV2 is ReentrancyGuard{
     using SafeERC20 for IERC20;
 
     IERC20 public stakingToken;
-    uint256 private _totalSupply;
+    uint256 public _totalSupply;
+    uint256 public ethBalance;
 
     mapping(address => uint256) private _balances;
     mapping(address => uint256) private _userEthEarned;
@@ -25,10 +26,6 @@ contract StakingV2 is ReentrancyGuard{
 
 
     /* ========== VIEWS ========== */
-
-    function totalSupply() external view returns (uint256) {
-        return _totalSupply;
-    }
 
     function balanceOf(address _account) external view returns (uint256) {
         return _balances[_account];
@@ -46,7 +43,7 @@ contract StakingV2 is ReentrancyGuard{
         stakingToken.transferFrom(msg.sender, address(this), _amount);
         _totalSupply = _totalSupply.add(_amount);
         _balances[msg.sender] = _balances[msg.sender].add(_amount);
-        emit Staked(msg.sender, _amount, block.timestamp);
+        emit Staked(msg.sender, _amount);
     }
 
     function withdraw(uint _amount) external nonReentrant{
@@ -63,20 +60,22 @@ contract StakingV2 is ReentrancyGuard{
             }
         }
         stakingToken.transfer(msg.sender, _amount);
-        emit Withdrawn(msg.sender, _amount, block.timestamp);
+        emit Withdrawn(msg.sender, _amount);
     }
 
     function claimRewards() external nonReentrant{
         uint256 reward = _userEthEarned[msg.sender];
         require(reward > 0, "No ETH rewards to claim");
         _userEthEarned[msg.sender] = 0;
+        ethBalance = ethBalance.sub(reward);
         payable(msg.sender).transfer(reward);
-        emit RewardClaimed(msg.sender, reward, block.timestamp);
+        emit RewardClaimed(msg.sender, reward);
     }
 
     //Would break if recipient address is repeated in array
     //Gas cost should increase linearly with number of stakers
     function depositEth() external payable{
+        ethBalance = ethBalance.add(msg.value);
         for(uint i =0; i < recipients.length; i++){
            _userEthEarned[recipients[i]] =  
            _userEthEarned[recipients[i]]
@@ -85,7 +84,7 @@ contract StakingV2 is ReentrancyGuard{
     }
 
     /* ========== EVENTS ========== */
-    event Staked(address _address, uint _amount, uint timestamp);
-    event Withdrawn(address _address, uint _amount, uint timestamp);
-    event RewardClaimed(address _address, uint _amount, uint timestamp);
+    event Staked(address _address, uint _amount);
+    event Withdrawn(address _address, uint _amount);
+    event RewardClaimed(address _address, uint _amount);
 }
